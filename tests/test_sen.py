@@ -2,10 +2,10 @@
 
 import geomstats.backend as gs
 import geomstats.tests
-from geomstats.geometry.matrices import Matrices
 
 from sen_tools.sen import SenTools
 from sen_tools.sen_cannonical_metric import CanonicalLeftInvariantMetric
+from utils import random_orthonormal_sen
 
 
 class TestCanonicalMetric(geomstats.tests.TestCase):
@@ -17,22 +17,10 @@ class TestCanonicalMetric(geomstats.tests.TestCase):
 
         self.space = self.metric.group
         n_samples = 2
-        gs.random.seed(0)
         point = self.space.random_uniform(n_samples)
 
-        tan_b = Matrices(n + 1, n + 1).random_uniform(n_samples)
-        tan_b = self.tools.regularize(tan_b)
-
-        # use a vector orthonormal to tan_b
-        tan_a = Matrices(n + 1, n + 1).random_uniform(n_samples)
-        tan_a = self.tools.regularize(tan_a)
-        tan_a[..., 0, -1] -= gs.sum(tan_b * tan_a, axis=(-1, -2)) / tan_b[..., 0, -1]
-        tan_b = gs.einsum('...ij,...->...ij', tan_b, 1. / self.metric.norm(tan_b, base_point=point))
-        tan_a = gs.einsum('...ij,...->...ij', tan_a, 1. / self.metric.norm(tan_a, base_point=point))
-
-        # normalize and move to base_point
-        self.tan_b = self.space.compose(point, tan_b)
-        self.tan_a = self.space.compose(point, tan_a)
+        self.tan_b, self.tan_a = random_orthonormal_sen(
+            point, n=n, n_samples=n_samples)
         self.point = point
         self.n_samples = n_samples
 

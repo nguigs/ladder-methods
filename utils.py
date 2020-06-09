@@ -8,9 +8,13 @@ from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.spd_matrices import SPDMatrices, SPDMetricAffine,\
     Matrices
 
+from sen_tools.sen import SenTools
+
+
 SPHERE = Hypersphere(2)
 SPD = SPDMatrices(3)
 SPDMetric = SPDMetricAffine(3)
+SEN = SenTools(3)
 
 
 def random_orthonormal_sphere(point):
@@ -45,6 +49,27 @@ def random_orthonormal_spd(point):
         '...ij,...->...ij', tan_a, 1. / SPDMetric.norm(tan_a, point))
 
     return tan_a, tan_b
+
+
+def random_orthonormal_sen(
+        point, n_samples=1, n=3, anisotropy=1., random_state=0):
+    gs.random.seed(random_state)
+    sen = SenTools(n)
+    if anisotropy != 1:
+        sen.set_anisotropic_metric(anisotropy)
+    tan_b = Matrices(n + 1, n + 1).random_uniform(n_samples)
+    tan_b = sen.regularize(tan_b)
+
+    # use a vector orthonormal to tan_b
+    tan_a = Matrices(n + 1, n + 1).random_uniform(n_samples)
+    tan_a = sen.regularize(tan_a)
+    tan_a[..., 0, -1] -= gs.sum(tan_b * tan_a, axis=(-1, -2)) / tan_b[
+        ..., 0, -1]
+    tan_b = gs.einsum('...ij,...->...ij', tan_b,
+                      1. / sen.norm(tan_b, base_point=point))
+    tan_a = gs.einsum('...ij,...->...ij', tan_a,
+                      1. / sen.norm(tan_a, base_point=point))
+    return sen.compose(point, tan_a), sen.compose(point, tan_b)
 
 
 def make_plot(
