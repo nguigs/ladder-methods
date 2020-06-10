@@ -1,14 +1,15 @@
 """Created by nguigui on 6/8/20."""
 
+import unittest
+
 import geomstats.backend as gs
-import geomstats.tests
 from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.spd_matrices import SPDMatrices, SPDMetricAffine
 
 import utils
 
 
-class TestUtils(geomstats.tests.TestCase):
+class TestUtils(unittest.TestCase):
     def setUp(self):
         self.sphere = Hypersphere(2)
         self.spd = SPDMatrices(3)

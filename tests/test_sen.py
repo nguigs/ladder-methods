@@ -1,14 +1,16 @@
 """Created by nguigui on 5/11/20."""
 
+import unittest
+import numpy as np
+
 import geomstats.backend as gs
-import geomstats.tests
 
 from sen_tools.sen import SenTools
 from sen_tools.sen_cannonical_metric import CanonicalLeftInvariantMetric
 from utils import random_orthonormal_sen
 
 
-class TestCanonicalMetric(geomstats.tests.TestCase):
+class TestCanonicalMetric(unittest.TestCase):
     def setUp(self):
         n = 3
         self.n = n
@@ -23,6 +25,11 @@ class TestCanonicalMetric(geomstats.tests.TestCase):
             point, n=n, n_samples=n_samples)
         self.point = point
         self.n_samples = n_samples
+
+        def assertAllClose(x, y, atol=1e-6, rtol=1e-6):
+            return np.testing.assert_allclose(x, y, atol=atol, rtol=rtol)
+
+        self.assertAllClose = assertAllClose
 
     def test_inner_product(self):
         result = self.metric.inner_product(self.tan_a, self.tan_b, self.point)
@@ -146,7 +153,7 @@ class TestCanonicalMetric(geomstats.tests.TestCase):
 
     def test_one_step_schild_ladder(self):
         expected_dict = self.metric.ladder_parallel_transport(
-            self.tan_a, self.tan_b, self.point, scheme='schild', n_ladders=1)
+            self.tan_a, self.tan_b, self.point, scheme='schild', n_rungs=1)
         result, result_point = self.tools.ladder_parallel_transport(
             self.tan_a, self.tan_b, self.point, n_steps=10, step='rk4',
             scheme='schild', n_rungs=1, tol=1e-10)
@@ -154,14 +161,14 @@ class TestCanonicalMetric(geomstats.tests.TestCase):
         end_point = expected_dict['end_point']
         self.assertTrue(gs.all(self.space.is_tangent(result, result_point)))
         self.assertAllClose(end_point, result_point)
-        self.assertAllClose(result, expected)
+        self.assertAllClose(result, expected, rtol=1e-4)
 
     def test_one_step_pole_ladder(self):
         expected_dict = self.metric.ladder_parallel_transport(
-            self.tan_a, self.tan_b, self.point, scheme='pole', n_ladders=1)
+            self.tan_a, self.tan_b, self.point, scheme='pole', n_rungs=1)
         result, result_point = self.tools.ladder_parallel_transport(
             self.tan_a, self.tan_b, self.point, n_steps=10, step='rk4',
-            scheme='pole', n_rungs=1, tol=1e-10)
+            scheme='pole', n_rungs=1, tol=1e-14)
         expected = expected_dict['transported_tangent_vec']
         end_point = expected_dict['end_point']
         self.assertTrue(gs.all(self.space.is_tangent(result, result_point)))
@@ -172,7 +179,7 @@ class TestCanonicalMetric(geomstats.tests.TestCase):
         exp = self.metric.exp(self.tan_b, self.point)
         expected_dict = self.metric.ladder_parallel_transport(
             self.tan_a / 10, self.tan_b, self.point, scheme='pole',
-            n_ladders=10)
+            n_rungs=10)
         result, result_point = self.tools.ladder_parallel_transport(
             self.tan_a / 10, self.tan_b, self.point, n_steps=1, step='rk4',
             scheme='pole', n_rungs=10, tol=1e-14)
@@ -185,18 +192,20 @@ class TestCanonicalMetric(geomstats.tests.TestCase):
         self.assertAllClose(result, expected)
 
     def test_ten_steps_schild_ladder(self):
+        n_rungs = 20
+        alpha = 1
         expected_dict = self.metric.ladder_parallel_transport(
-            self.tan_a / 20, self.tan_b, self.point, scheme='schild',
-            n_ladders=20)
+            self.tan_a / n_rungs ** alpha, self.tan_b, self.point,
+            scheme='schild', n_rungs=n_rungs)
         result, result_point = self.tools.ladder_parallel_transport(
-            self.tan_a / 20, self.tan_b, self.point, n_steps=1, step='rk4',
-            scheme='schild', n_rungs=20, tol=1e-14)
-        result *= 20
-        expected = expected_dict['transported_tangent_vec'] * 20
+            self.tan_a / n_rungs ** alpha, self.tan_b, self.point, n_steps=1,
+            step='rk4', scheme='schild', n_rungs=n_rungs, tol=1e-14)
+        result *= n_rungs ** alpha
+        expected = expected_dict['transported_tangent_vec'] * n_rungs ** alpha
         end_point = expected_dict['end_point']
         self.assertTrue(gs.all(self.space.is_tangent(result, result_point)))
-        self.assertAllClose(end_point, result_point)
-        self.assertAllClose(result, expected)
+        self.assertAllClose(end_point, result_point, rtol=1e-4)
+        self.assertAllClose(result, expected, rtol=1e-4)
 
     def test_set_anisotropic(self):
         beta = 3
