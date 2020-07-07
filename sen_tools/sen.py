@@ -222,13 +222,25 @@ class SenTools(object):
         return point_new, vector_new
 
     @classmethod
+    def _rk2_step(cls, state, force, dt, k1=None):
+        point, vector = state
+        if k1 is None:
+            k1 = cls.compose(point, vector)
+        l1 = force(point, vector)
+        k2 = cls.compose(point + dt / 2 * k1, vector + dt / 2 * l1)
+        l2 = force(point + dt / 2 * k1, vector + dt / 2 * l1)
+        point_new = point + dt * k2
+        vector_new = vector + dt * l2
+        return point_new, vector_new
+
+    @classmethod
     def integrate(cls, function, initial_state, end_time=1.0, n_steps=10,
                   step='rk4', **kwargs):
         dt = end_time / n_steps
         positions = [initial_state[0]]
         velocities = [initial_state[1]]
         current_state = (positions[0], velocities[0])
-        step_function = cls._rk4_step
+        step_function = cls._rk4_step if step=='rk4' else cls._rk2_step
         for _ in range(n_steps):
             current_state = step_function(current_state, function, dt)
             positions.append(current_state[0])
@@ -344,7 +356,9 @@ class SenTools(object):
         return transported, end_point
 
     def fanning_scheme(
-            self, tan_a, tan_b, base_point, n_rungs=1, two_perturbed=False):
+            self, tan_a, tan_b, base_point, n_rungs=1,two_perturbed=False,
+            rk_order=2):
+        step = self._rk4_step if rk_order == 4 else self._rk2_step
         dt = 1 / n_rungs
         left_angular_vel = self.compose(self.inverse(base_point), tan_b)
         next_state = (base_point, self.regularize(left_angular_vel))
@@ -357,12 +371,12 @@ class SenTools(object):
                 left_angular_vel - self.regularize(perturbed_vel_plus))
         transported = tan_a
         for i_point in range(n_rungs):
-            next_state = self._rk4_step(
+            next_state = step(
                 force=self.lie_acceleration, state=next_state, dt=dt)
-            perturbed_point, _ = self._rk4_step(
+            perturbed_point, _ = step(
                 state=perturbed_state, force=self.lie_acceleration, dt=dt)
             if two_perturbed:
-                perturbed_neg, _ = self._rk4_step(
+                perturbed_neg, _ = step(
                     state=perturbed_state_neg,
                     force=self.lie_acceleration, dt=dt)
                 transported = (perturbed_point - perturbed_neg) / 2 / dt
