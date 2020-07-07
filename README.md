@@ -6,7 +6,9 @@ This repository gathers the code to illustrate the paper on the convergence anal
 
 Clone the repo:
 
-`git clone https://gitlab.inria.fr/nguigui/ladder-transport.git`
+```
+git clone https://gitlab.inria.fr/nguigui/ladder-transport.git
+```
 
 The implementation relies on the package [`geomstats`](http://geomstats.ai) with its default numpy backend. The dependencies
 of geomstats and the package from the author's fork can be installed via
