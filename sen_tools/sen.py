@@ -342,3 +342,41 @@ class SenTools(object):
             n_steps=1, step='rk4', n_rungs=n_rungs, tol=1e-14)
         transported = ladder * (n_rungs ** beta)
         return transported, end_point
+
+    def fanning_scheme(
+            self, tan_a, tan_b, base_point, n_rungs=1, two_perturbed=False):
+        dt = 1 / n_rungs
+        left_angular_vel = self.compose(self.inverse(base_point), tan_b)
+        next_state = (base_point, self.regularize(left_angular_vel))
+        perturbed_vel_plus = self.compose(self.inverse(base_point), dt * tan_a)
+        perturbed_state = (
+            base_point, left_angular_vel + self.regularize(perturbed_vel_plus))
+        if two_perturbed:
+            perturbed_state_neg = (
+                base_point,
+                left_angular_vel - self.regularize(perturbed_vel_plus))
+        transported = tan_a
+        for i_point in range(n_rungs):
+            next_state = self._rk4_step(
+                force=self.lie_acceleration, state=next_state, dt=dt)
+            perturbed_point, _ = self._rk4_step(
+                state=perturbed_state, force=self.lie_acceleration, dt=dt)
+            if two_perturbed:
+                perturbed_neg, _ = self._rk4_step(
+                    state=perturbed_state_neg,
+                    force=self.lie_acceleration, dt=dt)
+                transported = (perturbed_point - perturbed_neg) / 2 / dt
+                perturbed_vel_neg = self.regularize(
+                    next_state[1] - self.compose(
+                        self.inverse(next_state[0]), transported))
+                perturbed_state_neg = (
+                    next_state[0], self.regularize(perturbed_vel_neg))
+            else:
+                transported = (perturbed_point - next_state[0]) / dt
+            perturbed_vel_plus = self.regularize(next_state[1] + self.compose(
+                self.inverse(next_state[0]), transported))
+            perturbed_state = (
+                next_state[0], self.regularize(perturbed_vel_plus))
+        end_point = next_state[0]
+        transported /= dt
+        return transported, end_point
