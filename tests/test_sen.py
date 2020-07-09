@@ -280,15 +280,25 @@ class TestCanonicalMetric(unittest.TestCase):
         n_lads = 10
         exp = self.tools.exp(self.tan_b, self.point, n_steps=2 * n_lads)
         result, result_point = self.tools.pole_ladder(
-            self.tan_a / n_lads, self.tan_b, self.point, n_rungs=n_lads,
+            self.tan_a, self.tan_b, self.point, n_rungs=n_lads,
             n_steps=1, step='rk4', tol=1e-14)
         expected, expected_point = self.tools.ladder_parallel_transport(
             self.tan_a / n_lads, self.tan_b, self.point, n_steps=2, step='rk4',
             scheme='pole', n_rungs=n_lads,
             tol=1e-14)
         expected *= n_lads
-        result *= n_lads
         self.assertAllClose(result_point, exp)
         self.assertAllClose(result_point, expected_point)
         self.assertTrue(gs.all(self.space.is_tangent(result, result_point)))
         self.assertAllClose(result, expected)
+
+    def test_fanning_scheme(self):
+        n_rungs = 10
+        expected, expected_point = self.tools.pole_ladder(
+            self.tan_a, self.tan_b, self.point, n_rungs=n_rungs,
+            n_steps=1, step='rk4', tol=1e-14)
+        result, result_point = self.tools.fanning_scheme(
+            self.tan_a, self.tan_b, self.point, n_rungs=2 * n_rungs ** 2,
+            two_perturbed=True, rk_order=2)
+        self.assertAllClose(expected, result, atol=1e-3)
+        self.assertAllClose(expected_point, result_point, rtol=1e-3)

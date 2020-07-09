@@ -328,17 +328,24 @@ class SenTools(object):
         return transported_tangent_vec, current_point
 
     def pole_ladder(self, tan_a, tan_b, base_point, n_rungs=1, **kwargs):
-        current_shoot = self.exp(tan_a, base_point, **kwargs)
+        dt = 1 / n_rungs
+        current_shoot, _ = self._rk4_step(
+            (base_point, self.compose(self.inverse(base_point), tan_a)),
+            self.lie_acceleration, dt)
         left_angular_vel = self.compose(self.inverse(base_point), tan_b)
         initial_state = (base_point, self.regularize(left_angular_vel))
-        flow, _ = self.integrate(
-            self.lie_acceleration, initial_state, n_steps=2 * n_rungs,
-            step='rk4')
-        for i_point in range(n_rungs):
-            mid_point = flow[2 * i_point + 1]
+        next_state = self._rk4_step(
+            initial_state, self.lie_acceleration, dt / 2)
+        for i_point in range(n_rungs - 1):
+            mid_point = next_state[0]
             current_shoot = self.symmetry(current_shoot, mid_point, **kwargs)
-        end_point = flow[-1]
-        transported = self.log(current_shoot, end_point, **kwargs)
+            next_state = self._rk4_step(
+                next_state, self.lie_acceleration, dt)
+        mid_point = next_state[0]
+        current_shoot = self.symmetry(current_shoot, mid_point, **kwargs)
+        end_point, _ = self._rk4_step(
+            next_state, self.lie_acceleration, dt / 2)
+        transported = self.log(current_shoot, end_point, **kwargs) * n_rungs
         if n_rungs % 2 == 1:
             transported *= -1.
         return transported, end_point
@@ -348,15 +355,13 @@ class SenTools(object):
         The best approximation we can make, to serve as ground truth in simulations
         """
         n_rungs = 120
-        beta = 1
-        ladder, end_point = self.pole_ladder(
-            tangent_vec_a / (n_rungs ** beta), tangent_vec_b, base_point,
+        transported, end_point = self.pole_ladder(
+            tangent_vec_a, tangent_vec_b, base_point,
             n_steps=1, step='rk4', n_rungs=n_rungs, tol=1e-14)
-        transported = ladder * (n_rungs ** beta)
         return transported, end_point
 
     def fanning_scheme(
-            self, tan_a, tan_b, base_point, n_rungs=1,two_perturbed=False,
+            self, tan_a, tan_b, base_point, n_rungs=1, two_perturbed=False,
             rk_order=2):
         step = self._rk4_step if rk_order == 4 else self._rk2_step
         dt = 1 / n_rungs
