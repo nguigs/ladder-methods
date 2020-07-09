@@ -74,9 +74,9 @@ def random_orthonormal_sen(
 
 def make_plot(
         ax, y_list, x_list, col='gray', title='Convergence error',
-        xlabel='1 / n', **kwargs):
+        xlabel='1 / n', marker='o', **kwargs):
     ax.plot(
-        x_list, y_list, marker='o', linewidth=1, c=col, linestyle='dashed',
+        x_list, y_list, marker=marker, linewidth=1, c=col, linestyle='dashed',
         fillstyle='none', **kwargs)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
