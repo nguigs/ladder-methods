@@ -1,6 +1,6 @@
 # Ladder Transport
 
-This repository gathers the code to illustrate the paper on the convergence analysis of ladder methods for parallel transport.
+This repository gathers the code to illustrate the [paper](https://hal.inria.fr/hal-02894783) on the convergence analysis of ladder methods for parallel transport.
 
 ## Install
 
