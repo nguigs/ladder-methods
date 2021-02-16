@@ -7,7 +7,7 @@ This repository gathers the code to illustrate the [paper](https://hal.inria.fr/
 Clone the repo:
 
 ```
-git clone https://gitlab.inria.fr/nguigui/ladder-transport.git
+git clone https://github.com/nguigs/ladder-methods.git
 ```
 
 The implementation relies on the package [`geomstats`](http://geomstats.ai) with its default numpy backend. The dependencies
